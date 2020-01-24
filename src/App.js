@@ -1,26 +1,84 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Fragment, useState, useEffect } from "react";
+import { BrowserRouter as Router, Route } from "react-router-dom";
+import Header from "./Components/layout/Header";
+import Todos from "./Components/Todos";
+import AddTodo from "./Components/AddTodo";
+import About from "./Components/pages/About";
+import "./App.css";
+// import uuid from "uuid";
+import axios from "axios";
 
-function App() {
+const App = () => {
+  const [todos, setTodos] = useState([]);
+  useEffect(() => {
+    axios
+      .get("http://jsonplaceholder.typicode.com/todos?_limit=10")
+      .then(resp =>
+        setTodos([
+          ...resp.data.map(d => {
+            if (d.completed) {
+              d.completed = !d.completed;
+            }
+            return d;
+          })
+        ])
+      );
+    // .then(resp => this.setState({ todos: [...resp.data] }))
+  }, []);
+
+  const markComplete = id => {
+    setTodos([
+      ...todos.map(todo => {
+        if (todo.id === id) {
+          todo.completed = !todo.completed;
+        }
+        return todo;
+      })
+    ]);
+  };
+  const deleteItem = id => {
+    axios.delete(`http://jsonplaceholder.typicode.com/todos/${id}`).then(res =>
+      setTodos([
+        ...todos.filter(todo => {
+          return todo.id !== id;
+        })
+      ])
+    );
+  };
+  const addTodo = title => {
+    // const counter = this.state.todos.length;
+    // const newTodo = { id: uuid.v4(), title, completed: false };
+    axios
+      .post("http://jsonplaceholder.typicode.com/todos", {
+        title,
+        completed: false
+      })
+      .then(res => setTodos([...todos, res.data]));
+  };
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className='App'>
+        <div className='container'>
+          <Header />
+          <Route
+            exact
+            path='/'
+            render={props => (
+              <Fragment>
+                <AddTodo addTodo={addTodo} />
+                <Todos
+                  todos={todos}
+                  markComplete={markComplete}
+                  deleteItem={deleteItem}
+                />
+              </Fragment>
+            )}
+          />
+          <Route path='/about' component={About} />
+        </div>
+      </div>
+    </Router>
   );
-}
+};
 
 export default App;
